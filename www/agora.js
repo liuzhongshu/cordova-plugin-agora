@@ -1,4 +1,4 @@
-//cordova.define("la.sou.plugin.agora.agora", function(require, exports, module) {
+//cordova.define("com.cloudtopo.plugin.agora.agora", function(require, exports, module) {
     var exec = require('cordova/exec'),
         cordova = require('cordova'),
         channel = require('cordova/channel'),

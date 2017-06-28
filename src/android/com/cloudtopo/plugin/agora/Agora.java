@@ -37,6 +37,8 @@ public class Agora extends CordovaPlugin {
 
         appContext = this.cordova.getActivity().getApplicationContext();
         appActivity = cordova.getActivity();
+        AgoraClient.Create("1beb71b96eb04d1ca1ef9d93bc28b13a", appContext);
+        AgoraClient.getInstance().getRtcEngine().enableVideo();
         super.pluginInitialize();
     }
 
@@ -49,42 +51,13 @@ public class Agora extends CordovaPlugin {
             return true;
         }
 
-        if (action.equals("create")) {
-            try {
-                JSONObject config = args.getJSONObject(0);
-                if(!config.has("appId")) {
-                    callbackContext.error(ClientError.Build(ClientError.ERR_PARAMETER_ERROR, "配置项中需要 appId。"));
-                } else {
-
-                    final String appId = config.getString("appId");
-                    final Context context = this.cordova.getActivity().getApplicationContext();
-                    appActivity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            AgoraClient.Create(appId, context);
-                            //禁止视频
-                            AgoraClient.getInstance().getRtcEngine().disableVideo();
-                            callbackContext.success();
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                callbackContext.error(ClientError.Build(ClientError.ERR_PARAMETER_ERROR, "第一个参数必须是对象。"));
-
-            }
-            return true;
-        }
-
         if (action.equals("joinChannel")) {
-            final String channelKey = args.getString(0);
-            final String channelName = args.getString(1);
-            final int uid = args.getInt(2);
+            final String channelName = args.getString(0);
+            final int uid = args.getInt(1);
             appActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    AgoraClient.getInstance().getRtcEngine()
-                            .joinChannel(channelKey, channelName, null, uid);
-
+                    AgoraClient.getInstance().getRtcEngine().joinChannel(null, channelName, null, uid);
                     callbackContext.success();
                 }
             });
@@ -127,7 +100,6 @@ public class Agora extends CordovaPlugin {
         }
 
 
-
         if (action.equals("enableSpeakerphone")) {
             int result =  AgoraClient.getInstance().getRtcEngine().setEnableSpeakerphone(true);
 
@@ -158,7 +130,7 @@ public class Agora extends CordovaPlugin {
             return true;
         }
 
-        //public abstract int startRecordingService(String key)
+
         if(action.equals("startRecordingService")) {
             final String recordingKey = args.getString(0);
             int result = AgoraClient.getInstance().getRtcEngine().startRecordingService(recordingKey);
@@ -167,7 +139,7 @@ public class Agora extends CordovaPlugin {
             return true;
         }
 
-        //public int stopRecordingService(String key)
+
         if(action.equals("stopRecordingService")) {
             final String recordingKey = args.getString(0);
             int result = AgoraClient.getInstance().getRtcEngine().stopRecordingService(recordingKey);

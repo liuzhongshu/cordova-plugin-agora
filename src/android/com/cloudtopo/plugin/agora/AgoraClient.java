@@ -45,8 +45,8 @@ public class AgoraClient {
     }
 
     public static AgoraClient getInstance() {
-        //if(instance == null)
-        //    throw new Exception("please call Create() first。");
+        if(instance == null)
+            throw new RuntimeException("please call Create() first");
 
         return instance;
     }
