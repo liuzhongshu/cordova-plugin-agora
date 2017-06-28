@@ -62,10 +62,8 @@ public class MessageHandler extends IRtcEngineEventHandler {
     }
 
     public void onCameraReady() {
-        //try {
-            JSONObject data = new JSONObject();
-            Agora.notifyEvent("onCameraReady", data);
-        //} catch (JSONException ignored) {}
+        JSONObject data = new JSONObject();
+        Agora.notifyEvent("onCameraReady", data);
     }
 
     public void onVideoStopped() {

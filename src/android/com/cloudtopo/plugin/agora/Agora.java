@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import io.agora.rtc.*;
@@ -29,7 +30,9 @@ public class Agora extends CordovaPlugin {
     protected Activity appActivity;
     protected Context appContext;
 
+
     private static CallbackContext eventCallbackContext;
+    private static SurfaceView localView,remoteView;
 
     @Override
     protected void pluginInitialize() {
@@ -43,10 +46,18 @@ public class Agora extends CordovaPlugin {
         AgoraClient.getInstance().getRtcEngine().setVideoProfile(Constants.VIDEO_PROFILE_360P, false); //???default
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-                SurfaceView localView = RtcEngine.CreateRendererView(appContext);
-                ((ViewGroup) webView.getView()).addView(localView);
-                localView.setZOrderMediaOverlay(false);
+                localView = RtcEngine.CreateRendererView(appContext);
+                remoteView = RtcEngine.CreateRendererView(appContext);
                 AgoraClient.getInstance().getRtcEngine().setupLocalVideo(new VideoCanvas(localView, VideoCanvas.RENDER_MODE_ADAPTIVE, 0));
+
+                FrameLayout.LayoutParams remoteViewParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+                FrameLayout.LayoutParams localViewParams = new FrameLayout.LayoutParams(300,300);
+                appActivity.addContentView(localView, localViewParams);
+                appActivity.addContentView(remoteView, remoteViewParams);
+
+                //设置这个保证webview的透明
+                webView.getView().setBackgroundColor(0x00000000);
+                ((ViewGroup)webView.getView()).bringToFront();
             }
         });
         super.pluginInitialize();
@@ -64,15 +75,6 @@ public class Agora extends CordovaPlugin {
         if (action.equals("joinChannel")) {
             final String channelName = args.getString(0);
             final int uid = args.getInt(1);
-
-            /*
-            appActivity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    AgoraClient.getInstance().getRtcEngine().joinChannel(null, channelName, null, uid);
-                    callbackContext.success();
-                }
-            }); */
 
             int result =  AgoraClient.getInstance().getRtcEngine().joinChannel(null, channelName, null, uid);
 
@@ -181,6 +183,16 @@ public class Agora extends CordovaPlugin {
     }
 
     public static void notifyEvent(String event, JSONObject data) {
+        //远端用户来了，自动显示
+        if (event.equals("onFirstRemoteVideoDecoded") && remoteView != null) {
+            try {
+                int uid = data.getInt("uid");
+                AgoraClient.getInstance().getRtcEngine().setupRemoteVideo(
+                        new VideoCanvas(remoteView, VideoCanvas.RENDER_MODE_ADAPTIVE, uid));
+            } catch (JSONException e) {
+            }
+        }
+
         if (eventCallbackContext != null) {
             JSONObject json = new JSONObject();
             try {
