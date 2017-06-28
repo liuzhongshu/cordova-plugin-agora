@@ -24,10 +24,9 @@ import org.json.JSONStringer;
 
 public class Agora extends CordovaPlugin {
 
-    public static final String TAG = "CDVAgora";
+    public static final String TAG = "Agora";
 
     protected Activity appActivity;
-
     protected Context appContext;
 
     private static CallbackContext eventCallbackContext;
@@ -37,8 +36,19 @@ public class Agora extends CordovaPlugin {
 
         appContext = this.cordova.getActivity().getApplicationContext();
         appActivity = cordova.getActivity();
+
+        //应用初始化
         AgoraClient.Create("1beb71b96eb04d1ca1ef9d93bc28b13a", appContext);
         AgoraClient.getInstance().getRtcEngine().enableVideo();
+        AgoraClient.getInstance().getRtcEngine().setVideoProfile(Constants.VIDEO_PROFILE_360P, false); //???default
+        cordova.getActivity().runOnUiThread(new Runnable() {
+            public void run() {
+                SurfaceView localView = RtcEngine.CreateRendererView(appContext);
+                ((ViewGroup) webView.getView()).addView(localView);
+                localView.setZOrderMediaOverlay(false);
+                AgoraClient.getInstance().getRtcEngine().setupLocalVideo(new VideoCanvas(localView, VideoCanvas.RENDER_MODE_ADAPTIVE, 0));
+            }
+        });
         super.pluginInitialize();
     }
 
@@ -54,13 +64,24 @@ public class Agora extends CordovaPlugin {
         if (action.equals("joinChannel")) {
             final String channelName = args.getString(0);
             final int uid = args.getInt(1);
+
+            /*
             appActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     AgoraClient.getInstance().getRtcEngine().joinChannel(null, channelName, null, uid);
                     callbackContext.success();
                 }
-            });
+            }); */
+
+            int result =  AgoraClient.getInstance().getRtcEngine().joinChannel(null, channelName, null, uid);
+
+            if(AgoraError.ERR_OK != result) {
+                callbackContext.error(ClientError.Build(result, "exec joinChannel failed!"));
+            } else {
+                callbackContext.success();
+            }
+
             return true;
         }
 
@@ -160,17 +181,14 @@ public class Agora extends CordovaPlugin {
     }
 
     public static void notifyEvent(String event, JSONObject data) {
-
-        JSONObject json = new JSONObject();
-
-        try {
-            json.put("event", event);
-            json.put("data", data);
-        } catch (JSONException ignored) {
-
-        }
-
         if (eventCallbackContext != null) {
+            JSONObject json = new JSONObject();
+            try {
+                json.put("event", event);
+                json.put("data", data);
+            } catch (JSONException ignored) {
+            }
+
             PluginResult result = new PluginResult(PluginResult.Status.OK, json);
             result.setKeepCallback(true);
             eventCallbackContext.sendPluginResult(result);
